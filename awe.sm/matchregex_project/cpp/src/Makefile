@@ -1,6 +1,6 @@
 CC = /usr/bin/g++
 ODIR = obj
-CFLAGS=-I. -I./deps/include
+CFLAGS=-I. -I./deps/include -I/usr/include 
 LDDLIBS=-L./deps/lib -Wl,-rpath,./deps/lib -lcppunit
 DEPS = matchregex.h 
 
@@ -19,7 +19,6 @@ all:
 
 $(TEST): $(OBJ)
 	gcc -o $@ $^ $(LDDLIBS)
-	./test_matchregex
 
 clean:
 	rm -f *.o *~ obj/* $(TEST)
