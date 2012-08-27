@@ -36,10 +36,10 @@ class testMatchRegEx : public CppUnit::TestFixture
   // Comment any test to remove a test case
   CPPUNIT_TEST_SUITE(testMatchRegEx) ;
   // Begin test suite  
-  CPPUNIT_TEST(test_emptyInput);
-  CPPUNIT_TEST(test_basic);
+  // CPPUNIT_TEST(test_emptyInput);
+  // CPPUNIT_TEST(test_basic);
   CPPUNIT_TEST(test_performance);
-  CPPUNIT_TEST(test_performanceRegex);
+  // CPPUNIT_TEST(test_performanceRegex);
   // End test suite definitions
   CPPUNIT_TEST_SUITE_END() ;
 
@@ -82,6 +82,14 @@ public:
   list<string> generatePermutation(const std::string input)
   {
     list<string> result;
+    if(input.length() <= 0)
+      return result;
+    if(input.length() == 1)
+    {
+      result.push_back(input);
+      return result;
+    }
+
     // generate permutation
     for(int i=0; i < input.length(); i++)
     {
@@ -98,18 +106,15 @@ public:
       {
         tmp = input;
       }
+
       std::string prefix = tmp.substr(0,1);
       std::string subinput = tmp.substr(1,tmp.length()-1);
       list<string> tmpR;
       if(overlapCache.find(subinput) == overlapCache.end())
       {
-        tmpR = generatePermutation(subinput);
-        overlapCache[subinput] = tmpR;
+        overlapCache[subinput] = generatePermutation(subinput);        
       }
-      else
-      {
-        tmpR = overlapCache[subinput];
-      }
+      tmpR = overlapCache[subinput];      
       list<string>::iterator tmpRItr = tmpR.begin();
       for( ; tmpRItr != tmpR.end(); tmpRItr++)
       {
@@ -134,13 +139,23 @@ public:
     testcases["Baiduspider-favo"] = "";
     testcases["askbot"] = "";
 
+    // Basic Variables for time measurements
+    ptime stime,etime;
+    time_duration diff;
+    int iterations = 10000;
+
+    // Generates all test cases
     list<string> jtestcases = generatePermutation("abcdefg");
 
-    std::cerr << "start counter" << std::endl;
-    ptime stime = microsec_clock::local_time();
-   
-    for(int i = 0; i < 100000 ; i++)
-    {
+    std::cerr << "[start 50% failure]" << std::endl;
+    stime = microsec_clock::local_time();
+
+#ifdef TEST1
+    /**
+     *  Time - 50% success
+     */
+    for(int i = 0; i < iterations ; i++)
+    {      
       map<string,string>::iterator testcasesItr = testcases.begin();
       for( ; testcasesItr != testcases.end(); testcasesItr++)
       {
@@ -148,6 +163,52 @@ public:
         string msg2 = msg + " [arg=" + (testcasesItr->first) + "][expect=" + (testcasesItr->second) + "][result=" + result + "]";
         CPPUNIT_ASSERT_MESSAGE(msg2.c_str(),(result==(testcasesItr->second)));      
       }
+    }
+
+    etime = microsec_clock::local_time();
+    diff = etime - stime;
+    std::cerr << "diff(seconds)=" << diff.total_seconds() << std::endl;
+    std::cerr << "diff(milliseconds)=" << diff.total_milliseconds() << std::endl;
+    std::cerr << "diff(nanoseconds)=" << diff.total_nanoseconds() << std::endl;
+    std::cerr << std::endl;
+
+    /**
+     *  Time - exact match test
+     */
+    testcases.clear();
+    testcases["Ask"] = "Ask";
+    testcases["Mozilla/2.0 (compatible; Ask Jeeves)"] = "Mozilla/2.0 (compatible; Ask Jeeves)";
+
+    std::cerr << "[start exact match test]" << std::endl;
+    stime = microsec_clock::local_time();
+    /**
+     *  Time - 100% failure
+     */
+    for(int i = 0; i < iterations ; i++)
+    {  
+      map<string,string>::iterator testcasesItr = testcases.begin();
+      for( ; testcasesItr != testcases.end(); testcasesItr++)
+      {
+        string result = matchRegEx(testcasesItr->first);
+        string msg2 = msg + " [arg=" + (testcasesItr->first) + "][expect=" + (testcasesItr->second) + "][result=" + result + "]";
+        CPPUNIT_ASSERT_MESSAGE(msg2.c_str(),(result==(testcasesItr->second)));      
+      }    
+    }
+
+    etime = microsec_clock::local_time();
+    diff = etime - stime;
+    std::cerr << "diff(seconds)=" << diff.total_seconds() << std::endl;
+    std::cerr << "diff(milliseconds)=" << diff.total_milliseconds() << std::endl;
+    std::cerr << "diff(nanoseconds)=" << diff.total_nanoseconds() << std::endl;
+    std::cerr << std::endl;
+
+    /**
+     *  Time - 100% failure
+     */
+    std::cerr << "[start 100% failure]" << std::endl;
+    stime = microsec_clock::local_time();
+    for(int i = 0; i < iterations ; i++)
+    {      
       list<string>::iterator jtestcasesItr = jtestcases.begin();
       for( ; jtestcasesItr != jtestcases.end(); jtestcasesItr++)
       {
@@ -156,11 +217,39 @@ public:
       }
     }
 
-    ptime etime = microsec_clock::local_time();
-    time_duration diff = etime - stime;
+    etime = microsec_clock::local_time();
+    diff = etime - stime;
     std::cerr << "diff(seconds)=" << diff.total_seconds() << std::endl;
     std::cerr << "diff(milliseconds)=" << diff.total_milliseconds() << std::endl;
     std::cerr << "diff(nanoseconds)=" << diff.total_nanoseconds() << std::endl;
+    std::cerr << std::endl;
+
+#endif // TEST1
+
+
+    /**
+     *  Time - 100% failure but forces all checks
+     */
+    std::cerr << "[start 100% failure but forces all checks]" << std::endl;
+    stime = microsec_clock::local_time();
+    for(int i = 0; i < iterations ; i++)
+    {      
+      list<string>::iterator jtestcasesItr = jtestcases.begin();
+      for( ; jtestcasesItr != jtestcases.end(); jtestcasesItr++)
+      {
+        string arg = *jtestcasesItr;
+        arg += "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        CPPUNIT_ASSERT_MESSAGE("should be empty",matchRegEx(arg)=="");
+      }
+    }
+
+    etime = microsec_clock::local_time();
+    diff = etime - stime;
+    std::cerr << "diff(seconds)=" << diff.total_seconds() << std::endl;
+    std::cerr << "diff(milliseconds)=" << diff.total_milliseconds() << std::endl;
+    std::cerr << "diff(nanoseconds)=" << diff.total_nanoseconds() << std::endl;
+    std::cerr << std::endl;
+
   }
 
   void test_performanceRegex()
@@ -177,14 +266,14 @@ public:
     testcases["Baiduspider-favo"] = "";
     testcases["askbot"] = "";
 
-    list<string> jtestcases2;
-    list<string> jtestcases = generatePermutation("abcdefghijklm");
-    list<string>::iterator jtestcasesItr = jtestcases.begin();
-    for( ; jtestcasesItr != jtestcases.end(); jtestcasesItr++)
+    list<string> generatedRegExpFinal;
+    list<string> generatedRegExp = generatePermutation("abcdefghijklm");
+    list<string>::iterator generatedRegExpItr = generatedRegExp.begin();
+    for( ; generatedRegExpItr != generatedRegExp.end(); generatedRegExpItr++)
     {
-      jtestcases2.push_back((*jtestcasesItr) + "*");
+      generatedRegExpFinal.push_back((*generatedRegExpItr) + "*");
     }
-    matchRegExInit(jtestcases2,false);
+    matchRegExInit(generatedRegExpFinal,false);
     std::cerr << "start counter" << std::endl;
 
     ptime stime = microsec_clock::local_time();

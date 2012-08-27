@@ -18,6 +18,8 @@ using namespace std;
 static const string emptyString;
 static set<string> exactMatch;
 static list<string> prefixMatch;
+static set<char> prefixMatchFirstChar;
+static set<string> prefixMatchFirst2Chars;
 static int shortestprefix = 0;
 
 /**
@@ -39,6 +41,9 @@ void matchRegExInit(const list<std::string> regexList, bool reset)
     {
       string prefix = regex.substr(0,(regex.length()-1));
       prefixMatch.push_back(prefix);
+      prefixMatchFirstChar.insert(prefix[0]);
+      if(prefix.length() > 1)
+        prefixMatchFirst2Chars.insert(prefix.substr(0,2));
       if(prefix.length() < shortestprefix ||
          shortestprefix <= 0)
         shortestprefix = prefix.length();
@@ -48,11 +53,17 @@ void matchRegExInit(const list<std::string> regexList, bool reset)
       exactMatch.insert(regex);
     }
   }
+  /**
+   *  Initialize exact match which uses a hash
+   */
   set<string>::iterator eitr = exactMatch.begin();
   for( ; eitr != exactMatch.end(); eitr++ )
   {
     std::cerr << "exact=" << *eitr << std::endl;
   }
+  /**
+   *  Prefix match requires a different data structure.
+   */
   list<string>::iterator pitr = prefixMatch.begin();
   for( ; pitr != prefixMatch.end(); pitr++ )
   {
@@ -60,6 +71,9 @@ void matchRegExInit(const list<std::string> regexList, bool reset)
   }
 }
 
+/**
+ * Initializes with Default Data Set
+ */
 void matchRegExDefaultInit()
 {
   list<string> defaultRegEx;
@@ -93,9 +107,25 @@ const std::string matchRegEx(const std::string input)
 
   // 2a. If input is shorter than prefix, we know it is not a match
   if(input.length() <= shortestprefix)
+  {
     return emptyString;
+  }
 
-  // 2b. Iterate each prefix to find a match
+  // TESTING PERFORMANCE of Trie Tree design
+  // 2b. More optimization logic. Check first char
+  if(prefixMatchFirstChar.find(input[0]) == prefixMatchFirstChar.end())
+  {
+    return emptyString;
+  }
+  
+  // Second optimization check 2 chars
+  if(input.length() > 1 && 
+     (prefixMatchFirst2Chars.find(input.substr(0,2)) == prefixMatchFirst2Chars.end()))
+  {
+    return emptyString;
+  }
+
+  // 2c. Brute force matching.. each prefix to find a match
   list<string>::iterator prefixMatchItr = prefixMatch.begin();
   for( ; prefixMatchItr != prefixMatch.end(); prefixMatchItr++)
   {
