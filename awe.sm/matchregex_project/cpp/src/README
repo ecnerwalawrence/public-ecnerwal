@@ -20,5 +20,19 @@
      - This compiles the code and unit test.
 
   b) gmake main_matchregex 
-     - This compiles a binary, so stdin input and regexp_dataset.txt allows you to overload the 
-       default regular expression
+     - This compiles a binary.
+     - The input can be passed by stdin, and the regular expression can be configed by regexp_dataset.txt.
+     e.g.
+
+     $./main_matchregex 
+     [Enter phrase]
+     Task
+     [Output]
+     Task
+     $ ./main_matchregex 
+     [Enter phrase]
+     Taskkk
+     [Output]
+     Task*
+
+     - regexp_dataset.txt is delimited by '\n' per regular expression.
