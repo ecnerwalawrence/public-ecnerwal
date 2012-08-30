@@ -7,17 +7,6 @@
 #define ___MATCH_REG_EX_PRIV_H__
 
 /**
- * matchRegExpInit
- *  - Helper function to initialize the regular expression list  
- *  - Exposed for unit testing.
- *
- * @param regexList - additional regular expression to add.
- * @param reset - clear previous loaded regular expressions.
- */
-void matchRegExInit(const std::list<std::string> regexList, bool reset = true);
-void matchRegExDefaultInit();
-
-/**
  * TrieTree class 
  * - 2 level trie tree for prefix matching.
  * - Note, this is a private class, but exposed for unit testing.

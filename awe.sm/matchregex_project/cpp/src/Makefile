@@ -1,6 +1,7 @@
 CC = /usr/bin/g++
 ODIR = obj
-CFLAGS= \
+
+INCLUDES= \
 	-I. \
 	-I./deps/include \
 	-I/usr/include \
@@ -15,11 +16,16 @@ DEPS = matchregex.h
 _OBJ = test_matchregex.o matchregex.o 
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
+_OBJ2 = main_matchregex.o matchregex.o 
+OBJ2 = $(patsubst %,$(ODIR)/%,$(_OBJ2))
+
 TEST = test_matchregex
+
+EXECUTE = main_matchregex
 
 # Applies foreach *.o
 $(ODIR)/%.o: %.cpp $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -o $@ $< $(INCLUDES)
 
 all:
 	gmake $(TEST)
@@ -28,6 +34,10 @@ all:
 $(TEST): $(OBJ)
 	gcc -o $@ $^ $(LDDLIBS)
 
+$(EXECUTE): $(OBJ2)
+	gcc -o $@ $^ $(LDDLIBS)
+
 clean:
-	rm -f *.o *~ obj/* $(TEST)
+	rm -f *.o *~ obj/* $(TEST) $(EXECUTE)
+
 

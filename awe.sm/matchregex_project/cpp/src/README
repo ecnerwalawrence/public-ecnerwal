@@ -1,5 +1,24 @@
-Compiled in 32bit RedHatLinux-4.x
+1. Build Instructions:
 
-dependencies:
-cppunit-1.12.0-2
-boost-1.44.0-1_02
+  a) Compiled in 32bit RedHatLinux-4.x. GNU gcc-3.4.6
+
+  b) dependencies:
+        - cppunit-1.12.0-2
+        - boost-1.44.0-1_02
+     You can put the headers in shared libraries in ./deps/include and ./deps/lib 
+     or change the Makefile
+
+     * INCLUDES = (header file locations)
+     * LDDLIBS = (shared objects locations)
+     * CC = compiler
+
+  c) gmake - compiles code
+
+2. Make and Run Instructions:
+  
+  a) gmake 
+     - This compiles the code and unit test.
+
+  b) gmake main_matchregex 
+     - This compiles a binary, so stdin input and regexp_dataset.txt allows you to overload the 
+       default regular expression

@@ -1,0 +1,9 @@
+Task
+Task*
+Mozilla/1.0 (compatible; Ask Jeeves/Teoma*
+Mozilla/2.0 (compatible; Ask Jeeves/Teoma*
+Mozilla/2.0 (compatible; Ask Jeeves)
+Aaiduspider-image*
+Aaiduspider-ads*
+Aaiduspider-cpro*
+Aaiduspider-favo*
