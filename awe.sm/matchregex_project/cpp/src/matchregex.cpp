@@ -1,4 +1,5 @@
 #include "matchregex.h"
+#include "matchregex_priv.h"
 #include <ostream>
 #include <sstream>
 #include <iostream>
@@ -11,16 +12,133 @@ using namespace std;
  *  Implementation
  * 
  *  SUMMARY:
- *
- *  TODO: Handle "blah*blah*" case
+ *  - The prefix matching is stored in a 2 level trie tree data structure.
+ *  - A stl::set<> is used to stored the exact matches, so we get a O(1) time. 
  *
  */
 static const string emptyString;
 static set<string> exactMatch;
-static list<string> prefixMatch;
-static set<char> prefixMatchFirstChar;
-static set<string> prefixMatchFirst2Chars;
 static int shortestprefix = 0;
+
+/**
+ * 2-level trie tree
+ * - I don't want to create too much depth 
+ *   in the trie tree.  It may lose efficiency, if we 
+ *   make this too complex.
+ */
+TrieTree::~TrieTree()
+{
+  clear();
+}
+
+void TrieTree::clear()
+{
+  data_.clear();
+}
+
+bool TrieTree::empty() const
+{
+  return data_.empty();
+}
+
+/**
+ *  If prefix is "a", we store as "a ".
+ */
+void TrieTree::insert(const string prefix)
+{
+  if(prefix.length() <= 0)
+  { 
+    std::cerr << "[error] invalid prefix" << std::endl;
+    return;
+  }
+
+  // 1. Determine keys for data_
+  char firstchar = prefix[0];
+  level1char.insert(firstchar);
+  char secondchar = ' ';
+  if(prefix.length() > 1)
+    secondchar = prefix[1];
+
+  // 2. Update data_
+  TT_Data_Lvl2_Type level2 = data_[firstchar];
+  (level2[secondchar]).push_back(prefix);
+  data_[firstchar] = level2;
+}
+
+string TrieTree::findPrefix(const string phrase) const
+{  
+  // Parse the keys
+  //  Note, TrieTree would never match a single char, unless we have '*'.
+  if(phrase.length() <= 1) return "";
+  char firstchar = phrase[0];
+  if(level1char.find(firstchar) == level1char.end()) return "";
+  char secondchar = ' ';
+  if(phrase.length() >= 2)
+    secondchar = phrase[1];
+  
+  // 1. Check level1 of trie tree
+  TT_Data_Type::const_iterator level1Itr = data_.find(firstchar);
+  if(level1Itr == data_.end()) 
+    return "";
+  
+  // 2. Check level2 of trie tree
+  TT_Data_Lvl2_Type level2 = level1Itr->second;
+  TT_Data_Lvl2_Type::const_iterator level2Itr = level2.find(' ');
+  if(level2Itr != level2.end()) 
+  {
+    // 2a. Checking single letter prefix, e.g. "a*"
+    return string(1,firstchar) + "*"; 
+  }
+  else
+  {
+    // 2b. Checking single letter prefix, e.g. "ab*"
+    level2Itr = level2.find(secondchar);
+    if(level2Itr == level2.end()) 
+      return "";
+  }
+  
+  // 3. Check last level
+  const list<string> level3 = level2Itr->second;
+  list<string>::const_iterator level3Itr = level3.begin();
+  for( ; level3Itr != level3.end(); level3Itr++)
+  {
+    string prefix = *level3Itr;
+    if(phrase.length() <= prefix.length()) continue;
+    if(phrase.find(prefix) == 0)
+    {
+      string tmp = prefix + "*";
+      return tmp;
+    }
+  }
+  return "";
+}
+
+ostream& operator<< (ostream &out, const TrieTree &tt)
+{
+  // 1.level1 of trie tree
+  TT_Data_Type::const_iterator level1Itr = tt.data_.begin();
+  for( ; level1Itr != tt.data_.end(); level1Itr++ )
+  {
+    out << "[" << level1Itr->first << "]" << std::endl;
+    // 2. level2 of trie tree
+    TT_Data_Lvl2_Type level2 = level1Itr->second;
+    TT_Data_Lvl2_Type::const_iterator level2Itr = level2.begin();
+    for( ; level2Itr != level2.end() ; level2Itr++) 
+    {
+      out << "  [" << level2Itr->first << "]" << std::endl;
+      // 3. Check last level
+      const list<string> level3 = level2Itr->second;
+      list<string>::const_iterator level3Itr = level3.begin();
+      for( ; level3Itr != level3.end(); level3Itr++)
+      {
+        out << "    " << *level3Itr << std::endl;
+      }
+    }
+  }
+  return out;
+}
+
+static TrieTree matchRegTrieTree;
 
 /**
  *  Overloads default list
@@ -30,44 +148,30 @@ void matchRegExInit(const list<std::string> regexList, bool reset)
   if(reset) 
   {
     exactMatch.clear();
-    prefixMatch.clear();
+    matchRegTrieTree.clear();
   }
 
   list<std::string>::const_iterator regexListItr = regexList.begin();
   for( ; regexListItr != regexList.end(); regexListItr++ )
   {
     string regex = *regexListItr;
+    if(regex[0] == '*' && regex.length() == 1) continue;
     if(regex[regex.length() - 1] == '*')
     {
       string prefix = regex.substr(0,(regex.length()-1));
-      prefixMatch.push_back(prefix);
-      prefixMatchFirstChar.insert(prefix[0]);
-      if(prefix.length() > 1)
-        prefixMatchFirst2Chars.insert(prefix.substr(0,2));
+
+      // Optimization
       if(prefix.length() < shortestprefix ||
          shortestprefix <= 0)
         shortestprefix = prefix.length();
+
+      // Trie Tree Initialization
+      matchRegTrieTree.insert(prefix);
     }
     else
     {
       exactMatch.insert(regex);
     }
-  }
-  /**
-   *  Initialize exact match which uses a hash
-   */
-  set<string>::iterator eitr = exactMatch.begin();
-  for( ; eitr != exactMatch.end(); eitr++ )
-  {
-    std::cerr << "exact=" << *eitr << std::endl;
-  }
-  /**
-   *  Prefix match requires a different data structure.
-   */
-  list<string>::iterator pitr = prefixMatch.begin();
-  for( ; pitr != prefixMatch.end(); pitr++ )
-  {
-    std::cerr << "prefix=" << *pitr << std::endl;
   }
 }
 
@@ -92,11 +196,17 @@ void matchRegExDefaultInit()
 const std::string matchRegEx(const std::string input)
 {
   // Initialize once
-  if(exactMatch.empty())
+  if(exactMatch.empty() && matchRegTrieTree.empty())
   {
-    // TODO: I should make this configurable
-    //       Default list
+    // Default list
     matchRegExDefaultInit();
+    if(exactMatch.empty() && matchRegTrieTree.empty())
+    {
+      // This should never happen.  However, if there was a coding mistake 
+      // in matchRegExDefaultInit(), this would display an error.
+      std::cerr << "[error] no reg expressions initialized" << std::endl;
+      return "";
+    }
   }
 
   // 1. Check for exact match
@@ -111,31 +221,7 @@ const std::string matchRegEx(const std::string input)
     return emptyString;
   }
 
-  // TESTING PERFORMANCE of Trie Tree design
-  // 2b. More optimization logic. Check first char
-  if(prefixMatchFirstChar.find(input[0]) == prefixMatchFirstChar.end())
-  {
-    return emptyString;
-  }
-  
-  // Second optimization check 2 chars
-  if(input.length() > 1 && 
-     (prefixMatchFirst2Chars.find(input.substr(0,2)) == prefixMatchFirst2Chars.end()))
-  {
-    return emptyString;
-  }
+  // 2b. Utilize TrieTree
+  return matchRegTrieTree.findPrefix(input);
 
-  // 2c. Brute force matching.. each prefix to find a match
-  list<string>::iterator prefixMatchItr = prefixMatch.begin();
-  for( ; prefixMatchItr != prefixMatch.end(); prefixMatchItr++)
-  {
-    string prefix = *prefixMatchItr;
-    if(input.length() <= prefix.length()) continue;
-    if(input.find(prefix) == 0)
-    {
-      string tmp = prefix + "*";
-      return tmp;
-    }
-  }
-  return emptyString;
 }

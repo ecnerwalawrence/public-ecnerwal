@@ -1,7 +1,15 @@
 CC = /usr/bin/g++
 ODIR = obj
-CFLAGS=-I. -I./deps/include -I/usr/include 
-LDDLIBS=-L./deps/lib -Wl,-rpath,./deps/lib -lcppunit
+CFLAGS= \
+	-I. \
+	-I./deps/include \
+	-I/usr/include \
+	$(NULL)
+
+LDDLIBS= \
+	-L./deps/lib -Wl,-rpath,./deps/lib -lcppunit \
+	$(NULL)
+
 DEPS = matchregex.h 
 
 _OBJ = test_matchregex.o matchregex.o 

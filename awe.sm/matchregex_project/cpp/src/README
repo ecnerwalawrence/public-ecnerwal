@@ -1,0 +1,5 @@
+Compiled in 32bit RedHatLinux-4.x
+
+dependencies:
+cppunit-1.12.0-2
+boost-1.44.0-1_02
